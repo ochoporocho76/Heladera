@@ -4,7 +4,8 @@
 <meta name="theme-color" content="#1F7A4D">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Heladera">
-<link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-192.png"><link rel="icon" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-192-1.png"><link rel="icon" href="icon-192-1.png">
+<script src="firebase-config.js"></script>
 <title>La Heladera de Pipizon</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -296,6 +297,7 @@ input[type=password]{width:100%;height:48px;padding:0 14px;border:1.5px solid va
       </div>
       <div id="prov-panel" style="display:flex;flex-direction:column;gap:14px"></div>
     </div>
+    <div class="card" id="fam-card"></div>
   </main>
 </div>
 
@@ -350,7 +352,7 @@ input[type=password]{width:100%;height:48px;padding:0 14px;border:1.5px solid va
     try { var raw = localStorage.getItem(KEY); if (raw) { var s = JSON.parse(raw); if (s && s.items && s.settings) { s.shop = s.shop || []; return s; } } } catch (e) {}
     return seed();
   }
-  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} if (typeof schedulePush === 'function') schedulePush(); }
 
   function inFridge() { return state.items.filter(function (i) { return i.estado === 'heladera'; }); }
   function sorted(list) { return list.slice().sort(function (a, b) { return a.vence < b.vence ? -1 : a.vence > b.vence ? 1 : 0; }); }
@@ -585,7 +587,7 @@ input[type=password]{width:100%;height:48px;padding:0 14px;border:1.5px solid va
   };
   function ensure(s) {
     s.ai = s.ai || {}; s.ai.keys = s.ai.keys || {}; s.ai.models = s.ai.models || {};
-    s.recetas = s.recetas || []; s.precios = s.precios || {}; s.codigos = s.codigos || {};
+    s.fam = s.fam || null; s.recetas = s.recetas || []; s.precios = s.precios || {}; s.codigos = s.codigos || {};
     return s;
   }
   function prov() { return state.ai.prov || (sampleFn ? 'claude' : 'gemini'); }
@@ -801,6 +803,7 @@ input[type=password]{width:100%;height:48px;padding:0 14px;border:1.5px solid va
       '<p class="hint">La clave queda guardada solo en este celular. No la compartas.</p>';
     h += '<button class="btn line block" type="button" id="st-test">Probar conexión</button><p class="hint" id="st-res" role="status" hidden></p>';
     document.getElementById('prov-panel').innerHTML = h;
+    renderFam();
     document.getElementById('sub').textContent = 'Conectá la IA que prefieras';
   }
   document.getElementById('view-settings').addEventListener('click', function (e) {
@@ -822,6 +825,131 @@ input[type=password]{width:100%;height:48px;padding:0 14px;border:1.5px solid va
       window.claude.use('sample').then(function (s) { if (s) { sampleFn = s; if (tab === 'settings') renderSettings(); } }).catch(function () {});
     }
   } catch (e) {}
+
+  /* ---------- Heladera compartida (Firebase) ---------- */
+  var COLS = ['items', 'shop', 'recetas'], FBV = '13.1.0', FB = null, lastSync = { items: {}, shop: {}, recetas: {} }, pushTimer = null, famUnsub = null, famStatus = '';
+  function fbCfg() { return window.FIREBASE_CONFIG || null; }
+  function canon(v) {
+    return JSON.stringify(v, function (k, x) {
+      if (x && typeof x === 'object' && !Array.isArray(x)) { var o = {}; Object.keys(x).sort().forEach(function (q) { o[q] = x[q]; }); return o; }
+      return x;
+    });
+  }
+  function fbLoad() {
+    if (FB) return Promise.resolve(FB);
+    var cfg = fbCfg(); if (!cfg) return Promise.reject({ code: 'nocfg' });
+    var b = 'https://www.gstatic.com/firebasejs/' + FBV + '/';
+    return Promise.all([import(b + 'firebase-app.js'), import(b + 'firebase-auth.js'), import(b + 'firebase-firestore.js')]).then(function (m) {
+      var app = m[0].initializeApp(cfg), auth = m[1].getAuth(app);
+      return m[1].signInAnonymously(auth).then(function () { FB = { db: m[2].getFirestore(app), fs: m[2] }; return FB; });
+    });
+  }
+  function famRef() { return FB.fs.doc(FB.db, 'familias', state.fam.code); }
+  function snapMap() {
+    var o = {}; COLS.forEach(function (c) { o[c] = {}; state[c].forEach(function (x) { o[c][x.id] = canon(x); }); });
+    return o;
+  }
+  function famRender() { if (tab === 'settings') renderSettings(); }
+  function schedulePush() { if (!state || !state.fam || !FB) return; clearTimeout(pushTimer); pushTimer = setTimeout(pushNow, 500); }
+  function pushNow() {
+    clearTimeout(pushTimer); pushTimer = null;
+    if (!FB || !state.fam) return Promise.resolve();
+    var cur = snapMap(), upd = {}, n = 0, prev = lastSync;
+    COLS.forEach(function (c) {
+      Object.keys(cur[c]).forEach(function (id) { if (prev[c][id] !== cur[c][id]) { upd[c + '.' + id] = JSON.parse(cur[c][id]); n++; } });
+      Object.keys(prev[c]).forEach(function (id) { if (!(id in cur[c])) { upd[c + '.' + id] = FB.fs.deleteField(); n++; } });
+    });
+    if (!n) return Promise.resolve();
+    lastSync = cur;
+    return FB.fs.updateDoc(famRef(), upd).catch(function () { lastSync = prev; famStatus = 'No pude guardar en la nube. Revisá tu conexión.'; famRender(); });
+  }
+  function refresh() {
+    var a = document.activeElement;
+    if (a && a.tagName === 'INPUT' && a.type !== 'checkbox') { setTimeout(refresh, 1500); return; }
+    render();
+  }
+  function applyRemote(data) {
+    var before = canon(snapMap());
+    COLS.forEach(function (c) { var m = (data && data[c]) || {}; state[c] = Object.keys(m).map(function (k) { return m[k]; }); });
+    state.shop.sort(function (a, b) { return a.id < b.id ? -1 : 1; });
+    state.recetas.sort(function (a, b) { return a.id < b.id ? 1 : -1; });
+    lastSync = snapMap();
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+    if (canon(lastSync) !== before) refresh();
+  }
+  function famSubscribe() {
+    if (famUnsub) { famUnsub(); famUnsub = null; }
+    famUnsub = FB.fs.onSnapshot(famRef(), function (snap) {
+      famStatus = '';
+      if (!snap.exists()) famStatus = 'Esa heladera compartida ya no existe.';
+      else if (pushTimer) pushNow(); else applyRemote(snap.data());
+      famRender();
+    }, function () { famStatus = 'Sin conexión con la heladera compartida.'; famRender(); });
+  }
+  function famCode() {
+    var A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', s = '', a = new Uint8Array(12); crypto.getRandomValues(a);
+    for (var i = 0; i < 12; i++) { s += A[a[i] % 32]; if (i === 3 || i === 7) s += '-'; }
+    return s;
+  }
+  function famMsg(t, bad) { var m = document.getElementById('fam-msg'); if (!m) return; m.textContent = t; m.hidden = !t; m.style.color = bad ? 'var(--bad-fg)' : ''; }
+  function famFail(e) {
+    state.fam = null;
+    if (e && e.code === 'nocfg') return 'La heladera compartida todavía no está configurada.';
+    var c = e && e.code;
+    if (c === 'permission-denied') return 'Firebase rechazó el pedido. Revisá las reglas y que esté activado el acceso anónimo.';
+    return 'No pude conectarme. Revisá tu conexión e intentá de nuevo.';
+  }
+  function famCreate() {
+    famMsg('Creando…');
+    fbLoad().then(function () {
+      state.fam = { code: famCode() };
+      var data = { creado: Date.now() };
+      COLS.forEach(function (c) { data[c] = {}; state[c].forEach(function (x) { data[c][x.id] = JSON.parse(JSON.stringify(x)); }); });
+      return FB.fs.setDoc(famRef(), data).then(function () { lastSync = snapMap(); save(); famSubscribe(); famRender(); });
+    }).catch(function (e) { var m = famFail(e); famRender(); famMsg(m, true); });
+  }
+  function famJoin(raw) {
+    var c = String(raw || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (c.length !== 12) { famMsg('El código tiene 12 letras y números, por ejemplo K7HQ-2M9X-P4TD.', true); return; }
+    var code = c.slice(0, 4) + '-' + c.slice(4, 8) + '-' + c.slice(8);
+    famMsg('Buscando…');
+    fbLoad().then(function () {
+      state.fam = { code: code };
+      return FB.fs.getDoc(famRef()).then(function (snap) {
+        if (!snap.exists()) { state.fam = null; famMsg('No encontré una heladera con ese código. Revisalo.', true); return; }
+        var mine = state.items.filter(function (i) { return !i.ejemplo; }).length + state.shop.length;
+        if (mine && !window.confirm('Lo que tenés cargado en este celular se va a reemplazar por la heladera compartida. ¿Seguir?')) { state.fam = null; famMsg('', false); return; }
+        applyRemote(snap.data()); save(); famSubscribe(); famRender();
+      });
+    }).catch(function (e) { var m = famFail(e); famRender(); famMsg(m, true); });
+  }
+  function famLeave() {
+    if (famUnsub) { famUnsub(); famUnsub = null; }
+    state.fam = null; lastSync = { items: {}, shop: {}, recetas: {} }; save(); famRender();
+  }
+  function renderFam() {
+    var el = document.getElementById('fam-card'), h = '<h3>Heladera compartida</h3>';
+    if (!fbCfg()) { el.innerHTML = h + '<p class="hint">Esta función no está disponible en esta vista. Funciona en la app instalada, una vez configurada.</p>'; return; }
+    if (state.fam) {
+      h += '<p class="hint">Todo lo que cargues se ve en los celulares de tu familia, y al revés: productos, compras y recetas guardadas. Pasales este código: en su celular tienen que ir a Ajustes y tocar “Unirme con un código”.</p>' +
+        '<div class="stat" style="text-align:center"><b style="font-size:26px;letter-spacing:1px">' + esc(state.fam.code) + '</b><span>Código de tu familia</span></div>' +
+        '<div class="row"><button class="btn soft" type="button" id="fam-copy" style="flex:1">Copiar código</button><button class="btn line" type="button" id="fam-leave" style="flex:1">Salir</button></div>' +
+        '<p class="hint">Quien tenga el código puede ver y cambiar tu heladera. No lo publiques.</p>';
+    } else {
+      h += '<p class="hint">Compartí una misma heladera con tu familia: todos ven y cambian lo mismo, cada uno desde su celular.</p>' +
+        '<button class="btn block" type="button" id="fam-new">Crear heladera compartida</button>' +
+        '<div><label class="lbl" for="fam-code">Si ya tienen una, unite con el código</label><div class="row"><input id="fam-code" type="text" autocomplete="off" autocapitalize="characters" placeholder="K7HQ-2M9X-P4TD"><button class="btn soft" type="button" id="fam-join">Unirme</button></div></div>';
+    }
+    h += '<p class="hint" id="fam-msg" role="status"' + (famStatus ? '' : ' hidden') + (famStatus ? ' style="color:var(--bad-fg)"' : '') + '>' + esc(famStatus) + '</p>';
+    el.innerHTML = h;
+  }
+  document.getElementById('fam-card').addEventListener('click', function (e) {
+    var t = e.target.closest('button'); if (!t) return;
+    if (t.id === 'fam-new') famCreate();
+    else if (t.id === 'fam-join') famJoin(document.getElementById('fam-code').value);
+    else if (t.id === 'fam-leave') { if (window.confirm('Vas a dejar de ver la heladera compartida. Lo que tenés en este celular se queda.')) famLeave(); }
+    else if (t.id === 'fam-copy') { try { navigator.clipboard.writeText(state.fam.code).then(function () { famMsg('Código copiado.', false); }); } catch (x) { famMsg(state.fam.code, false); } }
+  });
 
   /* ---------- Escanear ticket y código de barras ---------- */
   function guessCat(name) {
@@ -1043,6 +1171,7 @@ input[type=password]{width:100%;height:48px;padding:0 14px;border:1.5px solid va
   document.getElementById('f-cat').innerHTML = CATS.map(function (c) { return '<option value="' + c[0] + '">' + c[0] + '</option>'; }).join('');
   state = ensure(load());
   render();
+  if (state.fam && fbCfg()) fbLoad().then(famSubscribe).catch(function () { famStatus = 'Sin conexión con la heladera compartida.'; });
 })();
 </script>
 
