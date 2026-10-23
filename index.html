@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="es"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#1F7A4D">
+<meta name="theme-color" content="#6D3FD1">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Heladera">
 <link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-192-1.png"><link rel="icon" href="icon-192-1.png">
@@ -13,38 +13,39 @@
 <style>
 /* Layout: una columna de celular con encabezado, lista agrupada por urgencia y barra inferior de 2 pestañas */
 :root {
-  --bg: #F4F7F2;
+  --bg: #F6F4FB;
   --surface: #FFFFFF;
-  --fg: #16231C;
-  --muted: #55645A;
-  --line: #D5DFD6;
-  --field: #7D8F82;
-  --accent: #1F7A4D;
-  --accent-ink: #14583A;
-  --accent-soft: #DDF1E4;
-  --warn-bg: #FDEBC8;
-  --warn-fg: #7A3F00;
-  --bad-bg: #FDE3E0;
-  --bad-fg: #8E1B12;
-  --btn: #16231C;
+  --fg: #1F1A2E;
+  --muted: #5E5873;
+  --line: #DDD8EA;
+  --field: #8A82A3;
+  --accent: #6D3FD1;
+  --accent-ink: #5128A8;
+  --accent-soft: #ECE6FA;
+  --warn-bg: #FBEBCF;
+  --warn-fg: #7A4A00;
+  --bad-bg: #FBE3E6;
+  --bad-fg: #9B1C31;
+  --btn: #2A1E4F;
   --on-btn: #FFFFFF;
   --font: 'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0F1712; --surface: #18231C; --fg: #E8EFE9; --muted: #A3B2A7; --line: #2A3A2F; --field: #5E7365;
-    --accent: #4CC28A; --accent-ink: #7FDDAE; --accent-soft: #1C3A2A;
-    --warn-bg: #3A2C10; --warn-fg: #F2C879; --bad-bg: #3F1A17; --bad-fg: #F5A39B;
-    --btn: #E8EFE9; --on-btn: #0F1712; color-scheme: dark;
+    --bg: #141020; --surface: #1E1830; --fg: #ECE8F7; --muted: #ADA6C4; --line: #2F2749; --field: #6B6388;
+    --accent: #A98BF2; --accent-ink: #C6B2F8; --accent-soft: #2B2250;
+    --warn-bg: #3A2C10; --warn-fg: #F2C879; --bad-bg: #3F1A22; --bad-fg: #F5A3B0;
+    --btn: #ECE8F7; --on-btn: #141020; color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #0F1712; --surface: #18231C; --fg: #E8EFE9; --muted: #A3B2A7; --line: #2A3A2F; --field: #5E7365;
-  --accent: #4CC28A; --accent-ink: #7FDDAE; --accent-soft: #1C3A2A;
-  --warn-bg: #3A2C10; --warn-fg: #F2C879; --bad-bg: #3F1A17; --bad-fg: #F5A39B;
-  --btn: #E8EFE9; --on-btn: #0F1712; color-scheme: dark;
+  --bg: #141020; --surface: #1E1830; --fg: #ECE8F7; --muted: #ADA6C4; --line: #2F2749; --field: #6B6388;
+  --accent: #A98BF2; --accent-ink: #C6B2F8; --accent-soft: #2B2250;
+  --warn-bg: #3A2C10; --warn-fg: #F2C879; --bad-bg: #3F1A22; --bad-fg: #F5A3B0;
+  --btn: #ECE8F7; --on-btn: #141020; color-scheme: dark;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 body {
   margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 16px; line-height: 1.4;
   padding-left: max(16px, env(safe-area-inset-left, 0px));
@@ -95,10 +96,10 @@ input[type=text], input[type=date], input[type=time], select {
 .notice button { min-height: 44px; padding: 0 12px; border-radius: 12px; border: 1.5px solid var(--accent); background: transparent; color: var(--accent-ink); font-weight: 800; font-size: 13px; cursor: pointer; }
 .empty { background: var(--surface); border-radius: 16px; padding: 24px 16px; text-align: center; color: var(--muted); }
 .empty strong { display: block; color: var(--fg); font-size: 17px; margin-bottom: 4px; }
-.push { background: #16231C; color: #FFFFFF; border-radius: 16px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; }
-.push .when { font-size: 12px; color: #C9D5CB; font-weight: 600; }
+.push { background: #2A1E4F; color: #FFFFFF; border-radius: 16px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; }
+.push .when { font-size: 12px; color: #CFC6EA; font-weight: 600; }
 .push .t { font-size: 17px; line-height: 22px; font-weight: 800; }
-.push .b { font-size: 14px; line-height: 20px; color: #E6EDE7; }
+.push .b { font-size: 14px; line-height: 20px; color: #E9E4F6; }
 .seg { display: flex; gap: 8px; }
 .seg button { flex: 1; min-height: 48px; border-radius: 12px; border: 1.5px solid var(--field); background: var(--surface); color: var(--fg); font-size: 15px; font-weight: 700; cursor: pointer; }
 .seg button[aria-pressed="true"] { background: var(--btn); border-color: var(--btn); color: var(--on-btn); }
@@ -166,6 +167,10 @@ input[type=password]{width:100%;height:48px;padding:0 14px;border:1.5px solid va
       <button class="btn" type="button" id="toggle-add" aria-expanded="false" aria-controls="add-card">+ Agregar</button>
     </div>
 
+    <div id="undo-note" class="notice" hidden>
+      <span id="undo-text"></span>
+      <button type="button" id="undo-btn">Deshacer</button>
+    </div>
     <div class="scanrow">
       <button class="btn soft" type="button" id="scan-ticket">Escanear ticket</button>
       <button class="btn soft" type="button" id="scan-code">Escanear código de barras</button>
@@ -224,7 +229,7 @@ input[type=password]{width:100%;height:48px;padding:0 14px;border:1.5px solid va
     <div class="card">
       <div class="row">
         <label class="lbl" for="s-hora" style="margin:0;flex:1;font-size:16px">Aviso diario a las</label>
-        <input id="s-hora" type="time" style="width:130px">
+        <input id="s-hora" type="time" style="width:150px">
       </div>
       <div>
         <div class="lbl" id="ant-lbl" style="font-size:16px">Avisarme con anticipación de</div>
@@ -265,8 +270,9 @@ input[type=password]{width:100%;height:48px;padding:0 14px;border:1.5px solid va
   <main id="view-shop" hidden>
     <form class="card" id="shop-form">
       <label class="lbl" for="shop-nombre" style="margin:0">Agregar a la lista</label>
+      <input id="shop-nombre" type="text" autocomplete="off" placeholder="Producto. Ej: Harina 000">
       <div class="row">
-        <input id="shop-nombre" type="text" autocomplete="off" placeholder="Ej: Harina 000">
+        <input id="shop-precio" type="text" inputmode="decimal" autocomplete="off" placeholder="Valor. Ej: 1250,50" aria-label="Valor del producto">
         <button class="btn" type="submit">Sumar</button>
       </div>
       <p class="hint" id="shop-msg" role="status" hidden></p>
@@ -437,6 +443,7 @@ input[type=password]{width:100%;height:48px;padding:0 14px;border:1.5px solid va
     for (var k = 0; k < navs.length; k++) {
       if (navs[k].getAttribute('data-tab') === tab) navs[k].setAttribute('aria-current', 'page'); else navs[k].removeAttribute('aria-current');
     }
+    showUndo();
     if (tab === 'fridge') renderFridge();
     else if (tab === 'recipes') renderRecipes();
     else if (tab === 'shop') renderShop();
@@ -482,11 +489,17 @@ input[type=password]{width:100%;height:48px;padding:0 14px;border:1.5px solid va
     renderTotals();
   }
 
+  var lastUndo = null, lastUndoText = '';
+  function showUndo() {
+    var n = document.getElementById('undo-note'); if (!n) return;
+    n.hidden = !lastUndo || tab !== 'fridge';
+    document.getElementById('undo-text').textContent = lastUndo ? 'Último cambio: ' + lastUndoText : '';
+  }
   function toast(text, onUndo) {
     var el = document.getElementById('toast');
     document.getElementById('toast-text').textContent = text;
-    undo = onUndo;
-    document.getElementById('toast-undo').hidden = !onUndo;
+    if (onUndo) { lastUndo = onUndo; lastUndoText = text; showUndo(); }
+    document.getElementById('toast-undo').hidden = true;
     el.hidden = false;
     clearTimeout(toastTimer);
     toastTimer = setTimeout(function () { el.hidden = true; undo = null; }, 5000);
@@ -865,7 +878,7 @@ input[type=password]{width:100%;height:48px;padding:0 14px;border:1.5px solid va
   }
   function refresh() {
     var a = document.activeElement;
-    if (a && a.tagName === 'INPUT' && a.type !== 'checkbox') { setTimeout(refresh, 1500); return; }
+    if (a && a.tagName === 'INPUT' && (a.hasAttribute('data-price') || a.closest('#view-settings'))) { setTimeout(refresh, 1500); return; }
     render();
   }
   function applyRemote(data) {
@@ -1139,7 +1152,10 @@ input[type=password]{width:100%;height:48px;padding:0 14px;border:1.5px solid va
     if (r === 'vacio') { inp.focus(); return; }
     if (r === 'heladera') { msg.textContent = 'Eso ya está en tu heladera, no hace falta comprarlo.'; msg.hidden = false; return; }
     if (r === 'repetido') { msg.textContent = 'Ya está en tu lista.'; msg.hidden = false; return; }
-    msg.hidden = true; inp.value = ''; renderShop();
+    msg.hidden = true;
+    var pe = document.getElementById('shop-precio'), pv = parseNum(pe.value);
+    if (pv) { r.precio = pv; state.precios[norm(r.nombre)] = pv; save(); }
+    inp.value = ''; pe.value = ''; renderShop(); inp.focus();
   });
   document.addEventListener('change', function (e) {
     var id = e.target.getAttribute && e.target.getAttribute('data-shop-check'); if (!id) return;
@@ -1160,6 +1176,9 @@ input[type=password]{width:100%;height:48px;padding:0 14px;border:1.5px solid va
     save();
     document.getElementById('f-nombre').value = ''; document.getElementById('f-cantidad').value = '';
     setAddOpen(false); filter = 'todo'; renderFridge(); toast(nombre + ' agregado a tu heladera', null);
+  });
+  document.getElementById('undo-btn').addEventListener('click', function () {
+    var f = lastUndo; lastUndo = null; showUndo(); if (f) f();
   });
   document.getElementById('f-cat').addEventListener('change', function () { updateHint(false); });
   document.getElementById('f-vence').addEventListener('change', function () { userPickedDate = true; updateHint(false); });
